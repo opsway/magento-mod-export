@@ -1,0 +1,116 @@
+<?xml version="1.0"?>
+<config>
+    <modules>
+        <OpsWay_ExportProducts>
+            <version>0.1.0</version>
+        </OpsWay_ExportProducts>
+    </modules>
+    <global>
+        <models>
+            <OpsWay_Exportproducts>
+                <class>OpsWay_ExportProducts_Model</class>
+                <resourceModel>OpsWay_Exportproducts_Mysql4</resourceModel>
+            </OpsWay_Exportproducts>
+            <OpsWay_Exportproducts_Mysql4>
+                <class>OpsWay_ExportProducts_Model_Mysql4</class>
+                <entities>
+                    <queue_table>
+                        <table>exportproducts_queue</table>
+                    </queue_table>
+                </entities>
+            </OpsWay_Exportproducts_Mysql4>
+        </models>
+    	<blocks>
+            <exportproducts>
+                <class>OpsWay_ExportProducts_Block</class>
+            </exportproducts>
+        </blocks>
+        <helpers>
+            <exportproducts>
+                <class>OpsWay_ExportProducts_Helper</class>
+            </exportproducts>
+        </helpers>
+        <resources>
+            <exportproducts_setup>
+                <setup>
+                    <module>OpsWay_ExportProducts</module>
+                </setup>
+                <connection>
+                    <use>core_setup</use>
+                </connection>
+            </exportproducts_setup>
+            <exportproducts_write>
+                <connection>
+                    <use>core_write</use>
+                </connection>
+            </exportproducts_write>
+            <exportproducts_read>
+                <connection>
+                    <use>core_read</use>
+                </connection>
+            </exportproducts_read>
+        </resources>
+    </global>
+    <crontab>
+        <jobs>
+            <opsway_exportproducts_cron>
+                <schedule>
+                    <cron_expr>*/5 * * * *</cron_expr>
+                </schedule>
+                <run>
+                    <model>OpsWay_Exportproducts/observer::initExport</model>
+                </run>
+            </opsway_exportproducts_cron>
+        </jobs>
+    </crontab>
+    <admin>
+        <routers>
+            <exportproducts>
+                <use>admin</use>
+                <args>
+                    <module>OpsWay_ExportProducts</module>
+                    <frontName>exportproducts</frontName>
+                </args>
+            </exportproducts>
+        </routers>
+    </admin>
+    <adminhtml>
+        <menu>
+            <export_products_button translate="title" module="exportproducts">
+                <title>Export products</title>
+                <sort_order>105</sort_order>
+                <children>
+                    <index translate="title" module="exportproducts">
+                        <title>View export queue</title>
+                        <sort_order>1</sort_order>
+                        <!--modulename/folder in controllers path_controllername/controller method-->
+                        <action>exportproducts/adminhtml_queue/index</action>
+                    </index>
+                </children>
+            </export_products_button>
+        </menu>
+        <acl>
+            <resources>
+                <admin>
+                    <children>
+                        <exportproducts>
+                            <title>Export products Menu Item</title>
+                            <children>
+                                <example translate="title" module="exportproducts">
+                                    <title>Example Menu Item</title>
+                                </example>
+                            </children>
+                        </exportproducts>
+                    </children>
+                </admin>
+            </resources>
+        </acl>
+        <layout>
+            <updates>
+                <exportproducts>
+                    <file>exportproducts.xml</file>
+                </exportproducts>
+            </updates>
+        </layout>
+    </adminhtml>
+</config>

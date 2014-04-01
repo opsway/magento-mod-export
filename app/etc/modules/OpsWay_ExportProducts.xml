@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<config>
+    <modules>
+        <OpsWay_ExportProducts>
+            <active>true</active>
+            <codePool>community</codePool>
+        </OpsWay_ExportProducts>
+    </modules>
+</config>
