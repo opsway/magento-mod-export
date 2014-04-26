@@ -1,18 +1,23 @@
 ﻿<?php
 class OpsWay_Exportproducts_Model_Observer extends Mage_Adminhtml_Controller_Action
 {    
-    protected $_exportPageSize = 5000;
+    protected $_exportPageSize = 1000;
+
+    /**
+     * Main method, that starts export
+     * @return bool
+     */
     public function initExport() {
 
         $exportIsRunning = $this->_exportAlreadyRunning();
         
         if(!$exportIsRunning) {
-            $filesToExport = $this->_getNewExportFiles();
+            $jobsToExport = $this->_getNewExportJobs();
             
-            if(count($filesToExport)) {
-                Mage::log("--- " . count($filesToExport) . " new file(s) to export ---", null, 'export_products.log');
+            if(count($jobsToExport)) {
+                Mage::log("--- " . count($jobsToExport) . " new job(s) to process ---", null, 'export_products.log');
                 try {
-                    $this->_runExport($filesToExport[0]);
+                    $this->_runExport($jobsToExport[0]);
                 } catch (Mage_Core_Exception $e) {
                     Mage::log("Error running export: " . $e->getMessage(), null, 'export_products.log');
                     $this->_getSession()->addError($e->getMessage());
@@ -21,7 +26,7 @@ class OpsWay_Exportproducts_Model_Observer extends Mage_Adminhtml_Controller_Act
                     $this->_getSession()->addError($this->__('Can`t run export'));
                 }
             } else {
-                //no new files to export
+                //no new jobs to export
                 return false;
             }
         } else {
@@ -31,8 +36,8 @@ class OpsWay_Exportproducts_Model_Observer extends Mage_Adminhtml_Controller_Act
     }
 
     /**
-     * Checks if there any row with 'processing' status in export table
-     * @return array
+     * Checks if there are already processing jobs now
+     * @return array of processing jobs
      */
     protected function _exportAlreadyRunning() {
         $queueModel = Mage::getModel('OpsWay_Exportproducts/Queue');
@@ -44,10 +49,10 @@ class OpsWay_Exportproducts_Model_Observer extends Mage_Adminhtml_Controller_Act
     }
 
     /**
-     * Checks if there are new files to export
-     * @return array
+     * Checks if there are new jobs to process
+     * @return array of jobs to process
      */
-    protected function _getNewExportFiles() {
+    protected function _getNewExportJobs() {
         $queueModel = Mage::getModel('OpsWay_Exportproducts/Queue');
         $queueCollection = $queueModel->getCollection()
                                       ->addFieldToFilter('status', array(
@@ -57,6 +62,11 @@ class OpsWay_Exportproducts_Model_Observer extends Mage_Adminhtml_Controller_Act
         return $queueCollection->getData();
     }
 
+    /**
+     * Contains export logic, receives data to export
+     * @param  array $export data to export 
+     * @return
+     */
     protected function _runExport($export) {
         $start_date = now();
         $this->_updateStatus($export['id'], 'processing', $start_date, null);
@@ -89,6 +99,14 @@ class OpsWay_Exportproducts_Model_Observer extends Mage_Adminhtml_Controller_Act
         }
     }
 
+    /**
+     * Helper function to update jobs status, according to current export process step
+     * @param  int $id         is of job to work with
+     * @param  string $status     current status
+     * @param  date $start_date 
+     * @param  date $stop_date  
+     * @return 
+     */
     protected function _updateStatus($id, $status, $start_date, $stop_date) {
         $queueModel = Mage::getModel('OpsWay_Exportproducts/Queue')->load($id);
         $queueModel->setData('status', $status)
@@ -123,7 +141,7 @@ class OpsWay_Exportproducts_Model_Observer extends Mage_Adminhtml_Controller_Act
                 Mage::log("Page " . $currentPage . " data exporting...", null, 'export_products.log');
          
                 foreach ($productsCollection as $_product) {
-                    $content .= implode(',', $_product->getData()) . "\n";
+                    $content .= implode(',', $_product->getData()) . PHP_EOL;
                 }
          
                 $currentPage++;
@@ -134,7 +152,7 @@ class OpsWay_Exportproducts_Model_Observer extends Mage_Adminhtml_Controller_Act
 
             //Adding cols titles
             $cols = array_keys($productsCollection->getFirstItem()->getData());
-            $csvWithHeader = implode(',', $cols) . "\n" . $content;
+            $csvWithHeader = implode(',', $cols) . PHP_EOL . $content;
             
             return $csvWithHeader;
 
@@ -157,7 +175,7 @@ class OpsWay_Exportproducts_Model_Observer extends Mage_Adminhtml_Controller_Act
         $io       = new Varien_Io_File();
         $path     = Mage::getBaseDir('var') . DS . 'export';
         $file     = $path . DS . $exportData['file'];
-        $csvArray = explode("\n", $csv);
+        $csvArray = explode(PHP_EOL, $csv);
 
         $io->setAllowCreateFolders(true);
         $io->open(array('path' => $path));
@@ -167,8 +185,6 @@ class OpsWay_Exportproducts_Model_Observer extends Mage_Adminhtml_Controller_Act
         foreach ($csvArray as $key => $row) {
             $io->streamWriteCsv(explode(',', $row));
         }
-        $end = '+++FINISHED+++,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,';
-        $io->streamWriteCsv(explode(',', $end));
 
         return array(
             'type'  => 'filename',
